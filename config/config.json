@@ -1,0 +1,13 @@
+{
+    "botsettings": {
+        "clientid": "CLIENTID",
+        "token": "TOKEN",
+        "clientsecretid": "CLİENTSECRET"
+    },
+    "MySQL": {
+        "hostname": "MYSQLIP",
+        "username": "USER",
+        "password": "PASS",
+        "databasename": "DATABASE"
+    }
+}

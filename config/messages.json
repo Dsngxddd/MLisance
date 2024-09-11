@@ -1,0 +1,42 @@
+{
+    "database": {
+        "console": {
+            "connected": "Veritabanına başarıyla bağlanıldı."
+        }
+    },
+    "slashcommands": {
+        "addlicense": {
+            "description": "Yeni bir lisans anahtarı ekler."
+        },
+        "removelicense": {
+            "description": "Bir lisans anahtarını siler."
+        },
+        "editlicensebuyer": {
+            "description": "Lisans alıcısını düzenler.",
+            "options": {
+                "licensekey": "Lisans Anahtarı",
+                "newbuyer": "Yeni Alıcı"
+            }
+        },
+        "connectedusers": {
+            "description": "Kullanıcıya bağlı IP adreslerini gösterir.",
+            "options": {
+                "licensekey": "Lisans Anahtarı"
+            }
+        }
+    },
+    "errors": {
+        "dbconnection": "Veritabanına bağlanılamadı.",
+        "license_not_found": "Bu lisans anahtarı ve ürün için kayıt bulunamadı.",
+        "no_permission": "Bu komutu kullanmak için yeterli izne sahip değilsiniz.",
+        "db_error": "Veritabanında bir hata oluştu. Lütfen tekrar deneyin."
+    },
+    "success": {
+        "license_added": "Lisans başarıyla eklendi: {licenseKey}",
+        "license_removed": "Lisans başarıyla silindi: {licenseKey}",
+        "license_updated": "Lisans anahtarı başarıyla güncellendi: {newLicenseKey}",
+        "buyer_updated": "Lisans alıcısı başarıyla güncellendi: {newBuyer}",
+        "ip_removed": "IP adresi başarıyla silindi: {ip}",
+        "ip_added": "IP adresi başarıyla eklendi: {ip}"
+    }
+}
