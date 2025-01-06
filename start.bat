@@ -1,1 +1,1 @@
-pm2 start index.js
+node index.js
