@@ -1,2 +1,1 @@
-npm install 
-node index.js
+npm install pm2 -g
