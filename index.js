@@ -21,31 +21,98 @@ const db = mysql.createConnection({
     database: config.MySQL.databasename
 });
 
-db.connect(err => {
-    if (err) throw err;
-    console.log(messages.database.console.connected);
-
-    const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS license_table (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            license_key VARCHAR(255) NOT NULL,
-            username VARCHAR(255) NOT NULL,
-            used_ips TEXT,
-            buyer VARCHAR(255),
-            product VARCHAR(255) NOT NULL,
-            UNIQUE KEY (license_key)
-        )
-    `;
-    db.query(createTableQuery, (err, result) => {
-        if (err) {
-            console.error('Error:', err);
-        } else {
-            console.log('Table Oluşturuldu.');
-        }
-    });
+const pool = mysql.createPool({
+    connectionLimit: 10,
+    host: config.MySQL.hostname,
+    user: config.MySQL.username,
+    password: config.MySQL.password,
+    database: config.MySQL.databasename,
+    waitForConnections: true,
+    queueLimit: 0,
+    connectTimeout: 60000,
+    acquireTimeout: 60000,
+    timeout: 60000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
-// Start WebAPI
+// Veritabanı bağlantı havuzu hata yönetimi
+pool.on('error', (err) => {
+    console.error('Veritabanı havuzu hatası:', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+        console.log('Veritabanı bağlantısı kayboldu. Yeniden bağlanmaya çalışılıyor...');
+        handleDisconnect();
+    }
+});
+
+// Veritabanı sorguları için Promise-based wrapper
+function executeQuery(query, params = []) {
+    return new Promise((resolve, reject) => {
+        pool.query(query, params, (error, results) => {
+            if (error) {
+                console.error('Sorgu hatası:', error);
+                if (error.code === 'PROTOCOL_CONNECTION_LOST' || 
+                    error.code === 'ECONNRESET' || 
+                    error.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR') {
+                    handleDisconnect();
+                    reject(error);
+                    return;
+                }
+                reject(error);
+                return;
+            }
+            resolve(results);
+        });
+    });
+}
+
+function handleDisconnect() {
+    console.log('Veritabanına yeniden bağlanmaya çalışılıyor...');
+    
+    const tempPool = mysql.createPool({
+        connectionLimit: 10,
+        host: config.MySQL.hostname,
+        user: config.MySQL.username,
+        password: config.MySQL.password,
+        database: config.MySQL.databasename,
+        waitForConnections: true,
+        queueLimit: 0
+    });
+
+    tempPool.getConnection((err, connection) => {
+        if (err) {
+            console.error('Yeniden bağlanma hatası:', err);
+            setTimeout(handleDisconnect, 5000); 
+            return;
+        }
+
+        console.log('Veritabanına başarıyla yeniden bağlanıldı!');
+        connection.release();
+        pool = tempPool;
+    });
+}
+
+async function initializeDatabase() {
+    try {
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS license_table (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                license_key VARCHAR(255) NOT NULL,
+                username VARCHAR(255) NOT NULL,
+                used_ips TEXT,
+                buyer VARCHAR(255),
+                product VARCHAR(255) NOT NULL,
+                UNIQUE KEY (license_key)
+            )
+        `;
+        await executeQuery(createTableQuery);
+        console.log('Tablo başarıyla oluşturuldu.');
+    } catch (err) {
+        console.error('Tablo oluşturma hatası:', err);
+        setTimeout(initializeDatabase, 5000);
+    }
+}
+
 const licenseCheckApi = require('./API/licensecheck')(db);
 app.use('/api', licenseCheckApi);
 
@@ -63,7 +130,7 @@ client.on('ready', () => {
     console.log(`Logined as ${client.user.tag}!`);
     if (client.user) {
         updateBotStatus();
-        setInterval(updateBotStatus, 5000); // Her 5 saniyede bir güncelle
+        setInterval(updateBotStatus, 5000); 
     } else {
         console.error('client.user mevcut değil.');
     }
@@ -264,7 +331,7 @@ function updateBotStatus() {
             return;
         }
         const licenseCount = results[0].licenseCount;
-        console.log(`Toplam lisans sayısı: ${licenseCount}`); // Konsolda lisans sayısını kontrol edin
+        console.log(`Toplam lisans sayısı: ${licenseCount}`); 
         if (client.user) {
             try {
                 client.user.setActivity(`Toplam Lisans: ${licenseCount}`, { type: 'WATCHING' });
@@ -293,7 +360,7 @@ client.on('interactionCreate', async interaction => {
 
         if (commandName === 'lisansekle') {
             let licenseKey = options.getString('licensekey');
-            const username = options.getUser('username').id; // Kullanıcı ID'sini alarak kaydedin
+            const username = options.getUser('username').id; 
             const product = options.getString('product');
 
             if (licenseKey === 'random') {
